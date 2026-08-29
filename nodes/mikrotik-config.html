@@ -1,0 +1,81 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-config', {
+        category: 'config',
+        icon: 'hdd-rack.svg',
+        defaults: {
+            name: { value: '' },
+            host: { value: '', required: true },
+            port: { value: '', validate: RED.validators.regex(/^\d*$/) },
+            tls: { value: false },
+            allowSelfSigned: { value: false },
+            reconnect: { value: true }
+        },
+        credentials: {
+            user: { type: 'text' },
+            password: { type: 'password' }
+        },
+        label: function () {
+            return this.name || this.host || 'mikrotik-config';
+        },
+        oneditprepare: function () {
+            function toggleAllowSelfSigned() {
+                $('#node-config-row-allowSelfSigned').toggle($('#node-config-input-tls').is(':checked'));
+            }
+            $('#node-config-input-tls').on('change', toggleAllowSelfSigned);
+            toggleAllowSelfSigned();
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-config">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-server"></i> Host</label>
+        <input type="text" id="node-config-input-host" placeholder="192.168.88.1">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-plug"></i> Port</label>
+        <input type="text" id="node-config-input-port" placeholder="8728 (8729 for TLS)">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-tls"><i class="fa fa-lock"></i> TLS</label>
+        <input type="checkbox" id="node-config-input-tls" style="width: auto; vertical-align: middle;">
+    </div>
+    <div class="form-row" id="node-config-row-allowSelfSigned">
+        <label for="node-config-input-allowSelfSigned"><i class="fa fa-exclamation-triangle"></i> Allow self-signed cert</label>
+        <input type="checkbox" id="node-config-input-allowSelfSigned" style="width: auto; vertical-align: middle;">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-user"><i class="fa fa-user"></i> Username</label>
+        <input type="text" id="node-config-input-user" placeholder="admin">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+        <input type="password" id="node-config-input-password">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-reconnect"><i class="fa fa-refresh"></i> Auto-reconnect</label>
+        <input type="checkbox" id="node-config-input-reconnect" style="width: auto; vertical-align: middle;">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-config">
+    <p>A MikroTik RouterOS device: host, port/TLS, and API credentials, shared by any
+       number of Mikrotik action nodes.</p>
+    <p>One underlying connection is opened per config node, and each action node
+       referencing it opens its own channel on that same connection - so pointing
+       several action nodes at the same device does not open several TCP connections
+       to it.</p>
+    <p><b>Allow self-signed cert</b> disables certificate verification for TLS
+       connections. RouterOS's API-SSL service uses a self-signed certificate by
+       default, so this is usually needed unless you've installed a certificate from a
+       trusted CA on the device. Leaving it off is safer (protects against
+       man-in-the-middle) but will fail to connect to a device with the default,
+       self-signed certificate.</p>
+    <p>Like any config node, it isn't shown in the palette. To see its connection
+       status on a debug node, use the <b>mikrotik-status</b> node instead - it's an
+       ordinary, wireable node that reports this device's status.</p>
+</script>

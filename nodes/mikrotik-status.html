@@ -1,0 +1,47 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-status', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'status',
+        label: function () {
+            return this.name || 'status';
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-status">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-status">
+    <p>Reports a mikrotik-config device's connection status as messages - the
+       wireable/debuggable view of a config node, since config nodes themselves can't
+       be placed on a flow. Drag this onto the canvas and wire it to a debug node to
+       watch a device's connection health.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>always <code>"status"</code>.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload.state <span class="property-type">string</span></dt>
+        <dd><code>connected</code> / <code>reconnecting</code> / <code>disconnected</code>
+            / <code>error</code> / <code>login-failed</code>.</dd>
+    </dl>
+</script>

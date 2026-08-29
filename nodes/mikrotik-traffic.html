@@ -1,0 +1,66 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-traffic', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            interfaceName: {
+                value: 'ether1', required: true,
+                validate: RED.validators.regex(/^[a-zA-Z0-9_.-]+(\s*,\s*[a-zA-Z0-9_.-]+)*$/)
+            },
+            interval: {
+                value: '1', required: true,
+                validate: function (v) {
+                    const n = Number(v);
+                    return Number.isInteger(n) && n >= 1 && n <= 60;
+                }
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'traffic',
+        label: function () {
+            return this.name || 'traffic: ' + this.interfaceName;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-traffic">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label for="node-input-interfaceName"><i class="fa fa-random"></i> Interface</label>
+        <input type="text" id="node-input-interfaceName" placeholder="ether1">
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (s)</label>
+        <input type="text" id="node-input-interval" placeholder="1">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-traffic">
+    <p>Monitors traffic on one or more interfaces of a MikroTik device
+       (<code>/interface/monitor-traffic</code>) and emits one message per update.</p>
+    <p><b>Interface</b> accepts a comma-separated list (e.g. <code>ether1,ether3</code>),
+       matching RouterOS's own API format for this parameter.</p>
+    <p><b>Interval</b> is in seconds, 1-60.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>always <code>"monitor-traffic"</code>.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the parsed rows returned for this update.</dd>
+    </dl>
+</script>

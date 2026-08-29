@@ -1,0 +1,61 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-routes', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            interval: {
+                value: '',
+                validate: function (v) {
+                    if (v === '') { return true; }
+                    const n = Number(v);
+                    return Number.isInteger(n) && n >= 1 && n <= 60;
+                }
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'routes',
+        label: function () {
+            return this.name || 'routes';
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-routes">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (s)</label>
+        <input type="text" id="node-input-interval" placeholder="leave blank for change-only">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-routes">
+    <p>Monitors the active route table of a MikroTik device
+       (<code>/ip/route</code>) and emits one message per update.</p>
+    <p><b>Interval</b> is optional, 1-60 seconds. Leave it blank to only get a message
+       when a route actually changes; set it to also get the full route table on that
+       repeating interval.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>always <code>"routes"</code>.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the parsed rows returned for this update - the full table for the initial
+            message and any interval-based update, or just the changed row(s) for a
+            change-only update.</dd>
+    </dl>
+</script>
