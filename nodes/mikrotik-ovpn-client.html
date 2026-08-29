@@ -1,0 +1,154 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-ovpn-client', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            interfaceName: {
+                value: [],
+                validate: function (v) {
+                    return Array.isArray(v) && v.length > 0;
+                }
+            },
+            interval: {
+                value: '1', required: true,
+                validate: function (v) {
+                    const n = Number(v);
+                    return Number.isInteger(n) && n >= 1 && n <= 60;
+                }
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'ovpn client',
+        label: function () {
+            return this.name || 'ovpn client';
+        },
+        oneditprepare: function () {
+            const node = this;
+            let selected = Array.isArray(node.interfaceName)
+                ? node.interfaceName.slice()
+                : (node.interfaceName ? String(node.interfaceName).split(',') : []);
+
+            function setStatus(text, isError) {
+                $('#node-ovpn-interfaces-status').text(text).css('color', isError ? '#a00' : '#888');
+            }
+
+            function renderList(interfaces) {
+                const $list = $('#node-ovpn-interfaces-list').empty();
+                if (!interfaces.length) {
+                    $list.append($('<div>').css({ color: '#888', fontStyle: 'italic' })
+                        .text('No OVPN client interfaces found on this device.'));
+                    return;
+                }
+                interfaces.forEach(function (iface) {
+                    // Node-RED's own .form-row CSS forces a fixed width/float onto any
+                    // <label> and stretches <input> - checkbox nested directly inside
+                    // the label (rather than separate id/for elements) sidesteps that,
+                    // same as why the static checkboxes elsewhere in this plugin set
+                    // width:auto explicitly.
+                    const $label = $('<label>').css({
+                        display: 'block',
+                        width: 'auto',
+                        fontWeight: 'normal',
+                        margin: '2px 0',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                    });
+                    $('<input type="checkbox">')
+                        .css({ width: 'auto', verticalAlign: 'middle', marginRight: '6px' })
+                        .prop('checked', selected.indexOf(iface.name) !== -1)
+                        .val(iface.name)
+                        .appendTo($label);
+                    $label.append(document.createTextNode(iface.name + (iface.disabled ? ' (disabled)' : '')));
+                    $list.append($label);
+                });
+            }
+
+            function loadInterfaces() {
+                // Preserve whatever the user has actually checked so far across a
+                // manual refresh, rather than resetting to the node's original saved
+                // value every time.
+                if ($('#node-ovpn-interfaces-list input[type=checkbox]').length) {
+                    selected = $('#node-ovpn-interfaces-list input[type=checkbox]:checked')
+                        .map(function () { return this.value; }).get();
+                }
+
+                const deviceId = $('#node-input-device').val();
+                if (!deviceId || deviceId === '_ADD_') {
+                    setStatus('Select a device first.', false);
+                    $('#node-ovpn-interfaces-list').empty();
+                    return;
+                }
+                setStatus('Loading interfaces from device...', false);
+                $.getJSON('mikrotik-ovpn-client/interfaces/' + deviceId)
+                    .done(function (interfaces) {
+                        setStatus(interfaces.length + ' interface(s) found.', false);
+                        renderList(interfaces);
+                    })
+                    .fail(function (xhr) {
+                        const message = (xhr.responseJSON && xhr.responseJSON.error) || 'Could not load interfaces.';
+                        setStatus(message, true);
+                        $('#node-ovpn-interfaces-list').empty();
+                    });
+            }
+
+            $('#node-ovpn-refresh-interfaces').on('click', loadInterfaces);
+            $('#node-input-device').on('change', loadInterfaces);
+            loadInterfaces();
+        },
+        oneditsave: function () {
+            this.interfaceName = $('#node-ovpn-interfaces-list input[type=checkbox]:checked')
+                .map(function () { return this.value; }).get();
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-ovpn-client">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label style="vertical-align: top;"><i class="fa fa-random"></i> Interfaces</label>
+        <span style="display: inline-block; width: 70%;">
+            <button type="button" id="node-ovpn-refresh-interfaces" class="red-ui-button">
+                <i class="fa fa-refresh"></i> Refresh from device
+            </button>
+            <span id="node-ovpn-interfaces-status" style="margin-left: 8px; font-style: italic; color: #888;"></span>
+            <div id="node-ovpn-interfaces-list" style="margin-top: 6px; max-height: 160px; overflow-y: auto; overflow-x: hidden; border: 1px solid #ccc; padding: 4px; border-radius: 4px;"></div>
+        </span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (s)</label>
+        <input type="text" id="node-input-interval" placeholder="1">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-ovpn-client">
+    <p>Monitors OVPN client connections on a MikroTik device
+       (<code>/interface/ovpn-client/monitor</code>) and emits one message per update.</p>
+    <p><b>Interfaces</b> is populated live from the device (<code>/interface/ovpn-client/print</code>,
+       including disabled ones) once a Device is selected - check the ones to monitor.
+       This only works once the device is deployed and connected; use
+       <b>Refresh from device</b> to retry after deploying. Multiple selected
+       interfaces are monitored on the same channel.</p>
+    <p><b>Interval</b> is in seconds, 1-60.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>always <code>"ovpn-client"</code>.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the parsed rows returned for this update.</dd>
+    </dl>
+</script>

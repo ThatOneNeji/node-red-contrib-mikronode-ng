@@ -1,0 +1,37 @@
+{
+    "name": "Node-RED Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "overrideCommand": false,
+    // Fixed host:container port publish (docker -p), unlike forwardPorts below which
+    // is VS Code's own dynamic forwarding - this makes the editor reachable at a known
+    // address (http://localhost:18800) even from outside VS Code (curl, another
+    // machine on the host's network, etc).
+    "appPort": ["18800:1880"],
+    "mounts": [
+        "source=node-red-contrib-mikronode-ng-data,target=/data,type=volume"
+    ],
+    // Installs this repo's deps, then symlinks it into Node-RED's userDir
+    // (/data/node_modules) so the running instance picks up the node straight from
+    // the live, bind-mounted workspace - edits here just need a Node-RED restart
+    // (or container restart) to take effect, no reinstall/relink needed.
+    "postCreateCommand": "npm install && mkdir -p /data/node_modules && ln -sfn ${containerWorkspaceFolder} /data/node_modules/node-red-contrib-mikronode-ng",
+    "portsAttributes": {
+        "1880": {
+            "label": "Node-RED Editor",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "forwardPorts": [
+        1880
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "redhat.vscode-yaml"
+            ]
+        }
+    },
+    "remoteUser": "node-red"
+}

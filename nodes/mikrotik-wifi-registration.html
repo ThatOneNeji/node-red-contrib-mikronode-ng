@@ -1,0 +1,91 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-wifi-registration', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            capsman: { value: 'new' },
+            interval: {
+                value: '',
+                validate: function (v) {
+                    if (v === '') { return true; }
+                    const n = Number(v);
+                    return Number.isInteger(n) && n >= 1 && n <= 60;
+                }
+            },
+            transform: { value: false }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'wifi registration',
+        label: function () {
+            return this.name || 'wifi registration';
+        },
+        oneditprepare: function () {
+            function toggleTransform() {
+                $('#node-row-transform').toggle($('#node-input-capsman').val() === 'old');
+            }
+            $('#node-input-capsman').on('change', toggleTransform);
+            toggleTransform();
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-wifi-registration">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label for="node-input-capsman"><i class="fa fa-wifi"></i> CAPsMAN</label>
+        <select id="node-input-capsman">
+            <option value="new">New (/interface/wifi)</option>
+            <option value="old">Old (/caps-man)</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (s)</label>
+        <input type="text" id="node-input-interval" placeholder="leave blank for change-only">
+    </div>
+    <div class="form-row" id="node-row-transform">
+        <label for="node-input-transform"><i class="fa fa-magic"></i> Transform raw fields</label>
+        <input type="checkbox" id="node-input-transform" style="width: auto; vertical-align: middle;">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-wifi-registration">
+    <p>Monitors the wifi registration table of a MikroTik device and emits one message
+       per update.</p>
+    <p>RouterOS has two CAPsMAN implementations with different API paths for the same
+       information - pick <code>New</code> for <code>/interface/wifi/registration-table</code>
+       or <code>Old</code> for <code>/caps-man/registration-table</code> depending on
+       what the target device runs.</p>
+    <p><b>Interval</b> is optional, 1-60 seconds. Leave it blank to only get a message
+       when a client registers/deregisters; set it to also get the full table on that
+       repeating interval.</p>
+    <p><b>Transform raw fields</b> (old CAPsMAN only) reshapes each row from RouterOS's
+       raw, packed field format (e.g. <code>bytes: "11678220,43900697"</code> for a
+       combined tx/rx pair, <code>tx-rate: "150Mbps-40MHz/1S/SGI"</code> for a combined
+       rate+width) into a friendlier structure with separate <code>tx</code>/<code>rx</code>
+       objects. This is best-effort: a row that doesn't match the expected shape is
+       left in its raw form rather than dropped or erroring. Not available (or tested)
+       for new CAPsMAN, which uses different field names entirely.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd><code>"wifi-reg-new"</code> or <code>"wifi-reg-old"</code>, matching the
+            CAPsMAN choice above.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the parsed (or, with Transform enabled, reshaped) rows for this update.</dd>
+    </dl>
+</script>

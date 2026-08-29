@@ -1,3 +1,6 @@
+# Local planning docs (not meant for version control)
+/tmp/
+
 # Logs
 logs
 *.log
