@@ -1,6 +1,6 @@
 {
     "name": "node-red-contrib-mikronode-ng",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Node-RED node for monitoring MikroTik RouterOS devices (traffic, wifi registration, routes, OVPN clients) via mikronode-ng",
     "keywords": [
         "node-red",
@@ -21,6 +21,7 @@
         "node": ">=22.9.0"
     },
     "node-red": {
+        "version": ">=4.0.0",
         "nodes": {
             "mikrotik-config": "nodes/mikrotik-config.js",
             "mikrotik-status": "nodes/mikrotik-status.js",
@@ -32,6 +33,7 @@
     },
     "files": [
         "nodes/",
+        "examples/",
         "NOTICE.md"
     ],
     "scripts": {

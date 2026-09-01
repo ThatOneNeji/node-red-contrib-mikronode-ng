@@ -1,0 +1,61 @@
+[
+    {
+        "id": "c72bdc0d61de612e",
+        "type": "tab",
+        "label": "mikronode-ng",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "258f2c1b12993e66",
+        "type": "debug",
+        "z": "c72bdc0d61de612e",
+        "name": "Mikronode Traffic Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "587f8b6035babc66",
+        "type": "mikrotik-traffic",
+        "z": "c72bdc0d61de612e",
+        "name": "",
+        "device": "2874e1122a96fad5",
+        "interfaceName": "ether1",
+        "interval": "5",
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "258f2c1b12993e66"
+            ]
+        ]
+    },
+    {
+        "id": "2874e1122a96fad5",
+        "type": "mikrotik-config",
+        "name": "mikronode-ng dev",
+        "host": "mikronode-ng.dev",
+        "port": "",
+        "tls": false,
+        "allowSelfSigned": false,
+        "reconnect": true
+    },
+    {
+        "id": "46c2721b73d9389b",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-mikronode-ng": "0.1.1"
+        }
+    }
+]
