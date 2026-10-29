@@ -1,0 +1,60 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-log', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            mode: { value: 'follow-only' }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'log',
+        label: function () {
+            return this.name || 'log';
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-log">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label for="node-input-mode"><i class="fa fa-list"></i> Entries</label>
+        <select id="node-input-mode">
+            <option value="follow-only">New only</option>
+            <option value="follow">Previous, then new</option>
+        </select>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-log">
+    <p>Follows the system log of a MikroTik device (<code>/log/print</code>) and emits
+       one message per log entry.</p>
+    <p><b>Entries</b>: <code>New only</code> (the default) only emits entries logged
+       after the node connects. <code>Previous, then new</code> first emits every entry
+       still in the device's log buffer, then continues with new ones. In that mode the
+       history is sent again after every reconnect or redeploy.</p>
+    <p>This node only outputs entries. To keep them, wire it to a file, database or
+       MQTT node.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>always <code>"log"</code>.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the log entry, as one row with <code>.id</code>, <code>time</code>,
+            <code>topics</code> (comma-separated, e.g. <code>"system,info,account"</code>),
+            <code>message</code> and, when set, <code>extra-info</code>.</dd>
+    </dl>
+</script>

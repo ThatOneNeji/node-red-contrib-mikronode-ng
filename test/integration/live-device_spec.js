@@ -14,6 +14,7 @@ const helper = require('node-red-node-test-helper');
 const mikrotikConfigNode = require('../../nodes/mikrotik-config.js');
 const mikrotikRoutesNode = require('../../nodes/mikrotik-routes.js');
 const mikrotikStatusNode = require('../../nodes/mikrotik-status.js');
+const mikrotikLogNode = require('../../nodes/mikrotik-log.js');
 
 helper.init(require.resolve('node-red'));
 
@@ -132,6 +133,38 @@ describe('live device integration', function () {
                     // mikronode-ng coerces unambiguous numeric strings - 'distance' is
                     // one of the route fields that's always a plain integer on the wire.
                     msg.payload[0].distance.should.be.a.Number();
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            });
+        });
+    });
+
+    it('mikrotik-log in follow mode should emit the existing log entries from a real device', function (done) {
+        if (!HOST || !USER || !PASSWORD) {
+            return this.skip();
+        }
+        // follow (not the default follow-only) so the test doesn't wait for something
+        // new to be logged: the device's log buffer is sent first.
+        const flow = [
+            { id: 'n1', type: 'mikrotik-log', device: 'c1', mode: 'follow', wires: [['n2']] },
+            { id: 'c1', type: 'mikrotik-config', host: HOST, reconnect: false },
+            { id: 'n2', type: 'helper' }
+        ];
+        const credentials = { c1: { user: USER, password: PASSWORD } };
+        helper.load([mikrotikConfigNode, mikrotikLogNode], flow, credentials, function () {
+            const n2 = helper.getNode('n2');
+            let finished = false;
+            n2.on('input', function (msg) {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                try {
+                    msg.should.have.property('topic', 'log');
+                    msg.payload.should.have.length(1);
+                    msg.payload[0].should.have.properties(['.id', 'time', 'topics', 'message']);
                     done();
                 } catch (err) {
                     done(err);

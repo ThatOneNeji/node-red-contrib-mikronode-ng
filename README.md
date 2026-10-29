@@ -30,6 +30,11 @@ Node-RED nodes for monitoring MikroTik RouterOS devices, built on
   live for configured OVPN client interfaces (including disabled ones) and lets you
   pick from a checkbox list instead of typing names by hand - use "Refresh from
   device" if you add this node before the device has deployed/connected.
+- `mikrotik-log` — the system log (`/log/print`), topic `log`, one message per entry.
+  **Entries** picks `New only` (`=follow-only=`, the default) or `Previous, then new`
+  (`=follow=`: everything still in the device's log buffer, then new entries - sent
+  again after every reconnect). It only outputs entries; storing them is up to the flow
+  (file/DB/MQTT node).
 
 `mikrotik-routes` and `mikrotik-wifi-registration` both take an optional **Interval**
 (1-60s): left blank, they print the current state once then only emit again when
