@@ -79,7 +79,8 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
                 // garbage-collected, so it doesn't linger holding stale listeners.
                 channel.close();
             }
-            channel = node.device.connection.openChannel();
+            const ch = node.device.connection.openChannel();
+            channel = ch;
 
             const snapshotCommand = feature.snapshotCommand && resolve(feature.snapshotCommand, config);
             if (snapshotCommand) {
@@ -90,7 +91,16 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
                 channel.on('done', send);
             }
 
+            // The main command (listen, monitor, monitor-traffic, print =interval=) never
+            // sends `done`, so the Channel's row buffer (saveBuffer, default on, re-enabled
+            // by every write() as the command starts) would keep every row it ever receives
+            // for as long as Node-RED runs. Rows go out via 'read' anyway, so turn it off -
+            // here only: the snapshot's `done` above needs its buffer, it carries the whole
+            // table. The callback runs when this command actually starts, i.e. after the
+            // snapshot's `done`. Uses `ch` rather than the callback argument since the test
+            // fakes call it with none.
             channel.write(resolve(feature.command, config), feature.buildParams(config), function () {
+                ch.saveBuffer = false;
                 node.status({ fill: 'green', shape: 'dot', text: 'connected' });
             });
             channel.on('read', send);

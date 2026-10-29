@@ -43,7 +43,7 @@
         "lint": "eslint nodes test"
     },
     "dependencies": {
-        "@thatoneneji/mikronode-ng": "^1.4.0"
+        "@thatoneneji/mikronode-ng": "^1.5.0"
     },
     "devDependencies": {
         "dotenv": "^16.6.1",
