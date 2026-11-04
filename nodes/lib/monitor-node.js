@@ -47,7 +47,10 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
         let channel = null;
         let retryTimer = null;
 
-        function send(data) {
+        // `cmd` is the exact command path these rows came from (e.g.
+        // `/interface/wifi/print` for the snapshot, `/interface/wifi/listen` after it),
+        // without its params.
+        function send(cmd, data) {
             let payload = MikroNode.parseItems(data);
             if (feature.transformPayload) {
                 payload = feature.transformPayload(payload, config);
@@ -56,6 +59,7 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
                 topic: topic,
                 name: node.device.name || node.device.host,
                 hostname: node.device.host,
+                cmd: cmd,
                 // Epoch milliseconds (Date.now()'s own unit) - RouterOS's own payload
                 // has no notion of "when", only relative per-second counters, so this
                 // is the only source of truth for capture time.
@@ -81,14 +85,21 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
             }
             const ch = node.device.connection.openChannel();
             channel = ch;
+            // The command running right now, set by each write callback (which runs as
+            // that command starts): 'read' fires for any command's rows, the snapshot's
+            // included, so it can't assume the main command.
+            let running = null;
 
             const snapshotCommand = feature.snapshotCommand && resolve(feature.snapshotCommand, config);
             if (snapshotCommand) {
                 const snapshotParams = feature.buildSnapshotParams ? feature.buildSnapshotParams(config) : {};
                 channel.write(snapshotCommand, snapshotParams, function () {
+                    running = snapshotCommand;
                     node.status({ fill: 'green', shape: 'dot', text: 'connected' });
                 });
-                channel.on('done', send);
+                channel.on('done', function (data) {
+                    send(snapshotCommand, data);
+                });
             }
 
             // The main command (listen, monitor, monitor-traffic, print =interval=) never
@@ -99,11 +110,20 @@ module.exports = function createMonitorNode(RED, MikroNode, feature) {
             // table. The callback runs when this command actually starts, i.e. after the
             // snapshot's `done`. Uses `ch` rather than the callback argument since the test
             // fakes call it with none.
-            channel.write(resolve(feature.command, config), feature.buildParams(config), function () {
+            const command = resolve(feature.command, config);
+            channel.write(command, feature.buildParams(config), function () {
+                running = command;
                 ch.saveBuffer = false;
                 node.status({ fill: 'green', shape: 'dot', text: 'connected' });
             });
-            channel.on('read', send);
+            channel.on('read', function (data) {
+                // The snapshot's rows arrive one by one as 'read' too (confirmed against a
+                // real device); its 'done' sends them as one table, so don't send them twice.
+                if (snapshotCommand && running === snapshotCommand) {
+                    return;
+                }
+                send(running, data);
+            });
             channel.on('trap', function (trap) {
                 node.error('Mikrotik trap: ' + JSON.stringify(trap), { payload: trap });
                 node.status({ fill: 'red', shape: 'ring', text: 'trap - retrying' });
