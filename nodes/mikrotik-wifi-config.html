@@ -1,0 +1,83 @@
+<script type="text/javascript">
+    RED.nodes.registerType('mikrotik-wifi-config', {
+        category: 'network',
+        icon: 'hdd-rack.svg',
+        color: '#C0DEED',
+        defaults: {
+            name: { value: '' },
+            device: { value: '', type: 'mikrotik-config', required: true },
+            capsman: { value: 'new' },
+            interval: {
+                value: '',
+                validate: function (v) {
+                    if (v === '') { return true; }
+                    const n = Number(v);
+                    return Number.isInteger(n) && n >= 1 && n <= 60;
+                }
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        paletteLabel: 'wifi config',
+        label: function () {
+            return this.name || 'wifi config';
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="mikrotik-wifi-config">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-server"></i> Device</label>
+        <input type="text" id="node-input-device">
+    </div>
+    <div class="form-row">
+        <label for="node-input-capsman"><i class="fa fa-wifi"></i> CAPsMAN</label>
+        <select id="node-input-capsman">
+            <option value="new">New (/interface/wifi)</option>
+            <option value="old">Old (/caps-man)</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval (s)</label>
+        <input type="text" id="node-input-interval" placeholder="leave blank for change-only">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="mikrotik-wifi-config">
+    <p>Monitors the configuration each wifi interface is actually running with, and
+       emits one message per update. With CAPsMAN this is the configuration the
+       manager has provisioned on its remote CAPs.</p>
+    <p>RouterOS has two CAPsMAN implementations with different API paths - pick
+       <code>New</code> for <code>/interface/wifi</code> or <code>Old</code> for
+       <code>/caps-man/actual-interface-configuration</code> depending on what the
+       target device runs.</p>
+    <p><b>Interval</b> is optional, 1-60 seconds. Leave it blank to get the full table
+       once, then a message only when an interface's configuration changes; set it to
+       get the full table on that repeating interval instead.</p>
+    <p>In change-only mode a removed interface arrives as just
+       <code>{".id": "*8", ".dead": "true"}</code> - only its id, so keep the earlier
+       rows if you need to know which one it was.</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd><code>"wifi-cfg-new"</code> or <code>"wifi-cfg-old"</code>, matching the
+            CAPsMAN choice above.</dd>
+        <dt>name <span class="property-type">string</span></dt>
+        <dd>the device's configured name (falls back to its host).</dd>
+        <dt>hostname <span class="property-type">string</span></dt>
+        <dd>the device's host.</dd>
+        <dt>cmd <span class="property-type">string</span></dt>
+        <dd>the exact command these rows came from, without its parameters: the
+            CAPsMAN path above plus <code>/print</code> for the initial snapshot and for
+            interval-based updates, or <code>/listen</code> for change-only updates (e.g.
+            <code>/interface/wifi/listen</code>).</dd>
+        <dt>payload <span class="property-type">array</span></dt>
+        <dd>the parsed rows for this update - the full table for the initial message
+            and any interval-based update, or just the changed row(s) for a
+            change-only update.</dd>
+    </dl>
+</script>

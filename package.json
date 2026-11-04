@@ -1,7 +1,7 @@
 {
     "name": "node-red-contrib-mikronode-ng",
-    "version": "0.1.1",
-    "description": "Node-RED node for monitoring MikroTik RouterOS devices (traffic, wifi registration, routes, OVPN clients) via mikronode-ng",
+    "version": "0.1.2",
+    "description": "Node-RED node for monitoring MikroTik RouterOS devices (traffic, wifi registration, wifi config, routes, OVPN clients, log) via mikronode-ng",
     "keywords": [
         "node-red",
         "node-red-contrib",
@@ -28,7 +28,9 @@
             "mikrotik-traffic": "nodes/mikrotik-traffic.js",
             "mikrotik-wifi-registration": "nodes/mikrotik-wifi-registration.js",
             "mikrotik-routes": "nodes/mikrotik-routes.js",
-            "mikrotik-ovpn-client": "nodes/mikrotik-ovpn-client.js"
+            "mikrotik-ovpn-client": "nodes/mikrotik-ovpn-client.js",
+            "mikrotik-log": "nodes/mikrotik-log.js",
+            "mikrotik-wifi-config": "nodes/mikrotik-wifi-config.js"
         }
     },
     "files": [
@@ -43,7 +45,7 @@
         "lint": "eslint nodes test"
     },
     "dependencies": {
-        "@thatoneneji/mikronode-ng": "^1.4.0"
+        "@thatoneneji/mikronode-ng": "^1.7.0"
     },
     "devDependencies": {
         "dotenv": "^16.6.1",

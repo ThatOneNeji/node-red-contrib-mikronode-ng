@@ -24,14 +24,23 @@ Node-RED nodes for monitoring MikroTik RouterOS devices, built on
 - `mikrotik-wifi-registration` — wifi registration table, old or new CAPsMAN
   (`/caps-man/registration-table` or `/interface/wifi/registration-table`), topic
   `wifi-reg-old` or `wifi-reg-new`
+- `mikrotik-wifi-config` — the configuration each wifi interface is actually running
+  with, old or new CAPsMAN (`/caps-man/actual-interface-configuration`, i.e. what the
+  manager provisioned on its remote CAPs, or `/interface/wifi`), topic `wifi-cfg-old`
+  or `wifi-cfg-new`
 - `mikrotik-routes` — active routes (`/ip/route`), topic `routes`
 - `mikrotik-ovpn-client` — OVPN client connections (`/interface/ovpn-client/monitor`),
   topic `ovpn-client`. Once a Device is selected, its edit dialog queries the device
   live for configured OVPN client interfaces (including disabled ones) and lets you
   pick from a checkbox list instead of typing names by hand - use "Refresh from
   device" if you add this node before the device has deployed/connected.
+- `mikrotik-log` — the system log (`/log/print`), topic `log`, one message per entry.
+  **Entries** picks `New only` (`=follow-only=`, the default) or `Previous, then new`
+  (`=follow=`: everything still in the device's log buffer, then new entries - sent
+  again after every reconnect). It only outputs entries; storing them is up to the flow
+  (file/DB/MQTT node).
 
-`mikrotik-routes` and `mikrotik-wifi-registration` both take an optional **Interval**
+`mikrotik-routes`, `mikrotik-wifi-registration` and `mikrotik-wifi-config` take an optional **Interval**
 (1-60s): left blank, they print the current state once then only emit again when
 something actually changes; set, they instead re-emit the full table on that repeating
 cadence (confirmed against a real device: RouterOS's `print =interval=N` does this -
@@ -57,6 +66,8 @@ Each action node emits one message per update:
 - `msg.topic` — a short name for the feature (see above), not the underlying channel id
 - `msg.name` — the device's configured name (falls back to its host)
 - `msg.hostname` — the device's host
+- `msg.cmd` — the exact command the rows came from, without its parameters (e.g.
+  `/interface/wifi/print` for the initial snapshot, then `/interface/wifi/listen`)
 - `msg.timestamp` — when this plugin captured the message, epoch milliseconds
   (`Date.now()`) - RouterOS's own payload has no notion of "when," only relative
   per-second counters
@@ -71,6 +82,7 @@ Each action node emits one message per update:
   "topic": "monitor-traffic",
   "name": "Testing device",
   "hostname": "mikronode-ng.dev",
+  "cmd": "/interface/monitor-traffic",
   "timestamp": 1756468143123,
   "payload": [{ "name": "ether1", "rx-bits-per-second": 101360, "...": "..." }]
 }
